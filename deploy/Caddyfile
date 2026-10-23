@@ -1,0 +1,31 @@
+# Example Caddy site for tome's MCP endpoint: Let's Encrypt TLS, HTTP basic
+# auth, /mcp to tome serve on loopback, and nothing else.
+# Replace the host name (it must match TOME_ALLOWED_HOSTS and
+# TOME_ALLOWED_ORIGINS in /etc/tome/tome.env) and the user and password hash.
+#
+# Make the hash with "caddy hash-password" and use a long random password
+# (20+ characters, from a password manager). tome has no authentication of
+# its own yet, so this basic auth is the only gate in front of the wiki.
+#
+# Requires Caddy 2.8+ (the basic_auth directive name). Let's Encrypt needs a
+# DNS record for the host and ports 80 and 443 open.
+
+tome.example.com {
+	@mcp path /mcp /mcp/*
+
+	handle @mcp {
+		basic_auth {
+			you $2a$14$REPLACE_WITH_THE_OUTPUT_OF_caddy_hash-password
+		}
+
+		# Never buffer the Streamable HTTP responses (server-sent events).
+		reverse_proxy 127.0.0.1:8765 {
+			flush_interval -1
+		}
+	}
+
+	# Everything else, including the root and unauthenticated paths, is not served.
+	handle {
+		respond 404
+	}
+}

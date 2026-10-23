@@ -1,0 +1,11 @@
+[Unit]
+Description=Run tome capture (inbox and nyttig) every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+RandomizedDelaySec=2m
+# Run a missed capture at next boot if the VPS was down at the scheduled time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

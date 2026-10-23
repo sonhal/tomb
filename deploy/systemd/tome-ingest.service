@@ -1,0 +1,59 @@
+# Capture run for the bank, started by tome-ingest.timer every 30 minutes.
+# Runs as the "tome" user with the same settings as tome.service.
+#
+#   sudo install -m 0644 deploy/systemd/tome-ingest.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now tome-ingest.timer
+#
+# The two ExecStart lines run in order. The first (inbox) is required. The
+# second (nyttig) is prefixed with "-": systemd ignores its exit status, so a
+# nyttig outage does not mark the unit failed. Its output still goes to the
+# journal (journalctl -u tome-ingest). Because the inbox line runs first, a
+# failing inbox run also skips the nyttig capture until the next timer run.
+#
+# Tome takes its own writer lock, so this can run while tome.service is up.
+
+[Unit]
+Description=Capture inbox and nyttig sources into the tome bank
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tome
+Group=tome
+EnvironmentFile=/etc/tome/tome.env
+Environment=HOME=/var/lib/tome
+ExecStart=/opt/tome/.venv/bin/tome ingest inbox
+ExecStart=-/opt/tome/.venv/bin/tome ingest nyttig --since 2d --limit 500
+# Each run should finish well within this. A hung nyttig request is cut off
+# by the client timeout (30 s per request) long before this.
+TimeoutStartSec=15min
+
+StateDirectory=tome
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/tome
+UMask=0027
+
+# Hardening, as for tome.service. Network access is needed for nyttig.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
