@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 is done: steps 1 to 5 below are implemented. The README documents the
+Phase 1 is done: steps 1 to 5 below are implemented. `docs/` documents the
 CLI, MCP tools, configuration and sources; `deploy/` has the VPS setup.
 Open items: no authentication on `/mcp` yet (keep it on loopback, a private
 network, or behind Caddy basic auth), and Phase 2 (embeddings, RRF) has not started.
